@@ -3,12 +3,12 @@ from bs4 import BeautifulSoup
 import shutil
 import os
 import time
+from multiprocessing import Pool
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0'
 }
 http_prefix = 'http://www.no-banana.com'
-interval = 5
 
 
 def get_chapter_dict_list(book_url):
@@ -23,6 +23,7 @@ def get_chapter_dict_list(book_url):
         name = chapter.get_text().strip()
         chapter_dict = {'chapter_name': name, 'chapter_url': url}
         chapter_dict_list.append(chapter_dict)
+    chapter_dict_list.pop()
     return chapter_dict_list
 
 
@@ -41,12 +42,18 @@ def get_img_list(chapter_url):
     return img_list
 
 
-def download(url, filename):
-    full_filename = filename + '.jpg'
+def download_response(url, full_filename):
     r = requests.get(url, stream=True, headers=headers)
     with open(full_filename, 'wb') as f:
         r.raw.decode_content = True
         shutil.copyfileobj(r.raw, f)
+
+
+def download(url, filename):
+    full_filename = filename + '.jpg'
+    download_response(url, full_filename)
+    while (os.path.getsize(full_filename) < 201):
+        download_response(url, full_filename)
     print('%s saved.' % filename)
     print('%s size is %d' % (filename, os.path.getsize(full_filename)))
 
@@ -56,15 +63,22 @@ def download_imgs(img_list, fileprefix):
     for img in img_list:
         download(img, fileprefix + str(number).zfill(2))
         number = number + 1
-        time.sleep(interval)
+        #time.sleep(interval)
+
+
+def main(chapter_dict):
+    print('**** %s START' % chapter_dict['chapter_name'])
+    img_list = get_img_list(chapter_dict['chapter_url'])
+    download_imgs(img_list, chapter_dict['chapter_name'])
+    print('**** %s COMPLETE' % chapter_dict['chapter_name'])
 
 
 if __name__ == '__main__':
-    book_url = 'http://www.no-banana.com/book/619'
+    book_url = 'http://www.no-banana.com/book/618'
     chapter_dict_list = get_chapter_dict_list(book_url)
+    pool = Pool(4)
     for chapter_dict in chapter_dict_list:
-        print('**** %s START' % chapter_dict['chapter_name'])
-        img_list = get_img_list(chapter_dict['chapter_url'])
-        download_imgs(img_list, chapter_dict['chapter_name'])
-        print('**** %s COMPLETE' % chapter_dict['chapter_name'])
+        pool.apply_async(main,(chapter_dict,))
+    pool.close()
+    pool.join()
     
