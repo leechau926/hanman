@@ -33,9 +33,9 @@ def get_chapter_dict_list(book_url):
 
 def get_img_list(chapter_url):
     web_data = requests.get(chapter_url, headers=headers, proxies=proxies).content.decode('utf-8')
-    print('web_data got.')
+    # print('web_data got.')
     soup = BeautifulSoup(web_data, 'lxml')
-    print('soup completed.')
+    # print('soup completed.')
     img_area = soup.find_all(name='img', attrs={'class': 'lazy img-responsive'})
     img_list = []
     for img in img_area:
