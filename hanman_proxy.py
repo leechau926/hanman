@@ -13,7 +13,6 @@ proxies = {
     'https': 'socks5://192.168.131.1:10808'
 }
 http_prefix = 'http://www.no-banana.com'
-interval = 5
 
 
 def get_chapter_dict_list(book_url):
